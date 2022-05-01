@@ -38,9 +38,10 @@ class Dataset(torch.utils.data.Dataset):
             if not pd.isna(sample[name]):
                 decoded_mask = rle_decode(sample[name], shape=image.shape)[..., 0]
             else:
-                decoded_mask = np.zeros((sample.height, sample.width), dtype='uint8')
+                decoded_mask = np.zeros((sample.width, sample.height), dtype='uint8')
 
             masks.append(decoded_mask)
+
         mask = np.stack(masks, axis=2).astype(np.uint8)
 
         transformed = self.transforms(image=image, mask=mask)

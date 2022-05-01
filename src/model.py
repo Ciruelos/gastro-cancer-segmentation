@@ -19,7 +19,10 @@ class Model(pl.LightningModule):
     ):
         super().__init__()
 
-        self.model = smp.create_model(arch=arch, encoder_name=encoder_name, encoder_weights=encoder_weights)
+        self.model = smp.create_model(
+            arch=arch, encoder_name=encoder_name, encoder_weights=encoder_weights, classes=len(NAME2ID)
+        )
+        self.model.encoder.eval()
 
         self.learning_rate = learning_rate
         self.plateau_factor = plateau_factor
@@ -27,7 +30,7 @@ class Model(pl.LightningModule):
 
         self.loss = torch.nn.BCEWithLogitsLoss()
         self.metrics = torch.nn.ModuleDict(
-            {name: torchmetrics.classification.JaccardIndex(2, ignore_index=0) for name in NAME2ID}
+            {name: torchmetrics.classification.JaccardIndex(2) for name in NAME2ID}
         )
 
         self.save_hyperparameters()
@@ -44,7 +47,6 @@ class Model(pl.LightningModule):
         loss = 0.
         for name in NAME2ID:
             loss += self.loss(pred[name], target[name].float())
-
         self.log('train_loss', loss, prog_bar=True)
 
         return loss
@@ -53,7 +55,6 @@ class Model(pl.LightningModule):
         x, target = batch
 
         pred = self.forward(x)
-
         loss = 0.
         for name in NAME2ID:
             loss += self.loss(pred[name], target[name].float())
