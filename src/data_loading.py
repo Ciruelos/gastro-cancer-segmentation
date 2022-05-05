@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 import torch
 import pytorch_lightning as pl
 
-from src.constants import NAME2ID
+from src.constants import CLASSES
 
 
 IMAGENET_DEFAULT_MEAN = (0.485, 0.456, 0.406)
@@ -34,9 +34,9 @@ class Dataset(torch.utils.data.Dataset):
         image = cv2.imread(sample.image_path)[..., ::-1]
 
         masks = []
-        for name in NAME2ID:
-            if not pd.isna(sample[name]):
-                decoded_mask = rle_decode(sample[name], shape=image.shape)[..., 0]
+        for cs in CLASSES:
+            if not pd.isna(sample[cs]):
+                decoded_mask = rle_decode(sample[cs], shape=image.shape)[..., 0]
             else:
                 decoded_mask = np.zeros((sample.width, sample.height), dtype='uint8')
 
@@ -47,7 +47,7 @@ class Dataset(torch.utils.data.Dataset):
         transformed = self.transforms(image=image, mask=mask)
         image = transformed['image']
         mask = transformed['mask'].permute(2, 0, 1)  # h x w x n_classes -> n_classes x h x w
-        return image, {name: m.int() for name, m in zip(NAME2ID, mask)}
+        return image, {name: m.int() for name, m in zip(CLASSES, mask)}
 
 
 class DataModule(pl.LightningDataModule):

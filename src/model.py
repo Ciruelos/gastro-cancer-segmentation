@@ -3,7 +3,7 @@ import torchmetrics
 import pytorch_lightning as pl
 import segmentation_models_pytorch as smp
 
-from src.constants import NAME2ID
+from src.constants import CLASSES
 
 
 class Model(pl.LightningModule):
@@ -20,7 +20,7 @@ class Model(pl.LightningModule):
         super().__init__()
 
         self.model = smp.create_model(
-            arch=arch, encoder_name=encoder_name, encoder_weights=encoder_weights, classes=len(NAME2ID)
+            arch=arch, encoder_name=encoder_name, encoder_weights=encoder_weights, classes=len(CLASSES)
         )
         self.model.encoder.eval()
 
@@ -30,14 +30,14 @@ class Model(pl.LightningModule):
 
         self.loss = torch.nn.BCEWithLogitsLoss()
         self.metrics = torch.nn.ModuleDict(
-            {name: torchmetrics.classification.JaccardIndex(2) for name in NAME2ID}
+            {cs: torchmetrics.classification.IoU(2) for cs in CLASSES}
         )
 
         self.save_hyperparameters()
 
     def forward(self, x):
         y = self.model(x)
-        return dict(zip(NAME2ID, y.unbind(dim=1)))
+        return dict(zip(CLASSES, y.unbind(dim=1)))
 
     def training_step(self, batch, batch_idx):
         x, target = batch
@@ -45,8 +45,8 @@ class Model(pl.LightningModule):
         pred = self.forward(x)
 
         loss = 0.
-        for name in NAME2ID:
-            loss += self.loss(pred[name], target[name].float())
+        for cs in CLASSES:
+            loss += self.loss(pred[cs], target[cs].float())
         self.log('train_loss', loss, prog_bar=True)
 
         return loss
@@ -56,9 +56,9 @@ class Model(pl.LightningModule):
 
         pred = self.forward(x)
         loss = 0.
-        for name in NAME2ID:
-            loss += self.loss(pred[name], target[name].float())
-            self.metrics[name].update(pred[name].sigmoid(), target[name])
+        for cs in CLASSES:
+            loss += self.loss(pred[cs], target[cs].float())
+            self.metrics[cs].update(pred[cs].sigmoid(), target[cs])
 
         self.log('val_loss', loss, prog_bar=True)
 
@@ -66,12 +66,12 @@ class Model(pl.LightningModule):
 
     def on_validation_epoch_end(self) -> None:
         macro_metric = 0.0
-        for name in NAME2ID:
-            metric = self.metrics[name].compute()
-            self.log(f'{name}_iou', metric, prog_bar=True, sync_dist=True)
-            self.metrics[name].reset()
+        for cs in CLASSES:
+            metric = self.metrics[cs].compute()
+            self.log(f'{cs}_iou', metric, prog_bar=True, sync_dist=True)
+            self.metrics[cs].reset()
             macro_metric += metric
-        macro_metric = macro_metric / len(NAME2ID)
+        macro_metric = macro_metric / len(CLASSES)
         self.log('macro_iou', macro_metric, prog_bar=True, sync_dist=True)
 
     def configure_optimizers(self):

@@ -17,6 +17,7 @@ def get_parser() -> ArgumentParser:
     parser.add_argument('--images-dir', default='data/train', type=str, help=h)
     parser.add_argument('--input-size', default=224, type=int, help=h)
     parser.add_argument('--batch-size', default=2, type=int, help=h)
+    parser.add_argument('--val-size', default=0.2, type=float, help=h)
     parser.add_argument('--num-workers', default=4, type=int, help=h)
 
     # Model
