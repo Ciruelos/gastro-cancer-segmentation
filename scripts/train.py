@@ -12,25 +12,26 @@ def get_parser() -> ArgumentParser:
     parser = ArgumentParser()
     h = '%(type)s (default: %(default)s)'
 
+    # Model
+    parser.add_argument(
+        '--encoder-name', default='resnext50_32x4d', choices=smp.encoders.get_encoder_names(), type=str, help=h
+    )
+    parser.add_argument('--arch', default='deeplabv3plus', type=str, help=h)
+    parser.add_argument('--encoder-weights', default='swsl', type=str, help=h)
+    parser.add_argument('--loss-name', default='bce', type=str, help=h)
+
     # Data
     parser.add_argument('--df-path', default='data/train.csv', type=str, help=h)
     parser.add_argument('--images-dir', default='data/train', type=str, help=h)
     parser.add_argument('--input-size', default=224, type=int, help=h)
-    parser.add_argument('--batch-size', default=2, type=int, help=h)
+    parser.add_argument('--batch-size', default=32, type=int, help=h)
     parser.add_argument('--val-size', default=0.2, type=float, help=h)
     parser.add_argument('--num-workers', default=4, type=int, help=h)
 
-    # Model
-    parser.add_argument('--arch', default='deeplabv3plus', type=str, help=h)
-    parser.add_argument(
-        '--encoder-name', default='resnext50_32x4d', choices=smp.encoders.get_encoder_names(), type=str, help=h
-    )
-    parser.add_argument('--ecoder-weights', default='swsl', type=str, help=h)
-
     # Train
     parser.add_argument('--learning-rate', default=1e-3, type=float, help=h)
-    parser.add_argument('--earlystopping-patience', default=3, type=int, help=h)
-    parser.add_argument('--accumulate-grad-batches', default=32, type=int, help=h)
+    parser.add_argument('--earlystopping-patience', default=4, type=int, help=h)
+    parser.add_argument('--accumulate-grad-batches', default=1, type=int, help=h)
 
     # Other
     parser.add_argument('--log-name', default='default', type=str, help=h)

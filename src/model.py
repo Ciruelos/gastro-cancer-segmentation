@@ -11,6 +11,7 @@ class Model(pl.LightningModule):
         self,
         arch: str = 'deeplabv3plus',
         encoder_name: str = 'resnext50_32x4d',
+        loss_name: str = 'bce',
         encoder_weights: str = 'swsl',
         plateau_factor: float = 0.5,
         plateau_patience: int = 2,
@@ -28,9 +29,16 @@ class Model(pl.LightningModule):
         self.plateau_factor = plateau_factor
         self.plateau_patience = plateau_patience
 
-        self.loss = torch.nn.BCEWithLogitsLoss()
+        self.loss_name = loss_name
+
+        if self.loss_name == 'bce':
+            self.loss = torch.nn.BCEWithLogitsLoss()
+
+        elif self.loss_name == 'dice':
+            self.loss = smp.losses.DiceLoss(mode='binary', from_logits=True, smooth=1)
+
         self.metrics = torch.nn.ModuleDict(
-            {cs: torchmetrics.classification.IoU(2) for cs in CLASSES}
+            {cs: torchmetrics.classification.JaccardIndex(2) for cs in CLASSES}
         )
 
         self.save_hyperparameters()

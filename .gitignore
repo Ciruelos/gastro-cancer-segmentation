@@ -130,3 +130,4 @@ dmypy.json
 data
 lightning_logs
 trash
+saved_models

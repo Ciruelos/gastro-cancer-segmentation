@@ -126,7 +126,7 @@ class DataModule(pl.LightningDataModule):
         )
 
     @staticmethod
-    def get_aug_transforms(input_size):
+    def get_aug_transforms(input_size, **kwargs):
         return A.Compose(
             [
                 # Augmentation
@@ -141,7 +141,7 @@ class DataModule(pl.LightningDataModule):
         )
 
     @staticmethod
-    def get_basic_transforms(input_size):
+    def get_basic_transforms(input_size, **kwargs):
         return A.Compose(
             [
                 A.Resize(input_size, input_size),
@@ -149,18 +149,6 @@ class DataModule(pl.LightningDataModule):
                 ToTensorV2(),
             ]
         )
-
-
-def rle_encode(img):
-    '''
-    img: numpy array, 1 - mask, 0 - background
-    Returns run length as string formated
-    '''
-    pixels = img.flatten()
-    pixels = np.concatenate([[0], pixels, [0]])
-    runs = np.where(pixels[1:] != pixels[:-1])[0] + 1
-    runs[1::2] -= runs[::2]
-    return ' '.join(str(x) for x in runs)
 
 
 def rle_decode(mask_rle, shape, color=1):
