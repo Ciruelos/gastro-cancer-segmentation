@@ -1,14 +1,14 @@
 from pathlib import Path
 
 import cv2
+import torch
 import numpy as np
 import pandas as pd
 import albumentations as A
+import pytorch_lightning as pl
 from albumentations.pytorch import ToTensorV2
 from sklearn.model_selection import train_test_split
 
-import torch
-import pytorch_lightning as pl
 
 from src.constants import CLASSES
 
@@ -38,7 +38,7 @@ class Dataset(torch.utils.data.Dataset):
             if not pd.isna(sample[cs]):
                 decoded_mask = rle_decode(sample[cs], shape=image.shape)[..., 0]
             else:
-                decoded_mask = np.zeros((sample.width, sample.height), dtype='uint8')
+                decoded_mask = np.zeros((sample.height, sample.width), dtype='uint8')
 
             masks.append(decoded_mask)
 
@@ -46,7 +46,7 @@ class Dataset(torch.utils.data.Dataset):
 
         transformed = self.transforms(image=image, mask=mask)
         image = transformed['image']
-        mask = transformed['mask'].permute(2, 0, 1)  # h x w x n_classes -> n_classes x h x w
+        mask = transformed['mask']  # h x w x n_classes -> n_classes x h x w
         return image, {name: m.int() for name, m in zip(CLASSES, mask)}
 
 
@@ -88,8 +88,9 @@ class DataModule(pl.LightningDataModule):
             for image_path in scans_dir.glob('*'):
                 if 'slice_' + slice in image_path.name:
                     paths.append(str(image_path))
-                    heights.append(int(image_path.name.split('_')[2]))
-                    widths.append(int(image_path.name.split('_')[3]))
+                    # NOTE: widths and heigths are wrong in competition description
+                    heights.append(int(image_path.name.split('_')[3]))
+                    widths.append(int(image_path.name.split('_')[2]))
                     break
 
         df_new['image_path'] = paths
@@ -136,7 +137,7 @@ class DataModule(pl.LightningDataModule):
                 A.OneOf([A.GaussianBlur(), A.GaussNoise(), A.ImageCompression()], p=1 / 3),
                 # Common
                 A.Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD),
-                ToTensorV2(),
+                ToTensorV2(transpose_mask=True),
             ]
         )
 
@@ -146,18 +147,12 @@ class DataModule(pl.LightningDataModule):
             [
                 A.Resize(input_size, input_size),
                 A.Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD),
-                ToTensorV2(),
+                ToTensorV2(transpose_mask=True),
             ]
         )
 
 
 def rle_decode(mask_rle, shape, color=1):
-    '''
-    mask_rle: run-length as string formated (start length)
-    shape: (height,width) of array to return
-    Returns numpy array, 1 - mask, 0 - background
-
-    '''
     s = mask_rle.split()
     starts, lengths = [np.asarray(x, dtype=int) for x in (s[0:][::2], s[1:][::2])]
     starts -= 1

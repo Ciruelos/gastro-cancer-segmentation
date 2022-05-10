@@ -1,7 +1,7 @@
-from argparse import ArgumentParser
 import re
 import pprint
 from pathlib import Path
+from argparse import ArgumentParser
 
 import yaml
 import torch

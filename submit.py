@@ -17,9 +17,9 @@ SAMPLE_SUBMISSION = pd.read_csv('data/train.csv')
 SAMPLE_SUBMISSION.rename(columns={'segmentation': 'predicted'}, inplace=True)
 
 
-def rle_encode(img):
+def rle_encode(mask):
 
-    pixels = img.flatten()
+    pixels = mask.flatten()
     pixels = np.concatenate([[0], pixels, [0]])
     runs = np.where(pixels[1:] != pixels[:-1])[0] + 1
     runs[1::2] -= runs[::2]

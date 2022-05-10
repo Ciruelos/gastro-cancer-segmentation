@@ -4,5 +4,6 @@ segmentation-models-pytorch==0.2.1
 scikit-learn==1.0.2
 pandas==1.4.2
 albumentations==1.1.0
+monai==0.8.1
 flake8
 autopep8
