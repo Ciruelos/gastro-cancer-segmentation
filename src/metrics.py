@@ -12,7 +12,7 @@ class Dice(torchmetrics.ConfusionMatrix):
     def __init__(
         self,
         threshold: float = 0.5,
-        reduction: str = "elementwise_mean",
+        reduction: str = 'elementwise_mean',
         compute_on_step: Optional[bool] = None,
         **kwargs: Dict[str, Any],
     ):

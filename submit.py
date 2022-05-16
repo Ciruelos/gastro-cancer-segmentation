@@ -10,11 +10,18 @@ import albumentations as A
 
 
 IMAGES_DIR = Path('data/train')
-MODEL_DIR = Path('saved_models/submission-2')
+MODEL_DIR = Path('saved_models/submission-6')
 OUTPUT_DIR = Path('trash')
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 SAMPLE_SUBMISSION = pd.read_csv('data/train.csv')
 SAMPLE_SUBMISSION.rename(columns={'segmentation': 'predicted'}, inplace=True)
+
+
+def load_image(image_path: str):
+    image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED).astype('float32')
+    image = np.tile(image[..., None], [1, 1, 3])
+    image /= image.max()
+    return image
 
 
 def rle_encode(mask):
@@ -49,7 +56,7 @@ model.to(DEVICE)
 for image_path in tqdm(list(IMAGES_DIR.rglob('*.png'))):
     image_id = f'{image_path.parent.parent.name}_slice_{image_path.name.split("_")[1]}'
 
-    image = cv2.imread(str(image_path))[..., ::-1]
+    image = load_image(str(image_path))
     X = basic_transforms(image=image)['image'][None, ...]
 
     Y = model(X.to(DEVICE))
@@ -58,7 +65,7 @@ for image_path in tqdm(list(IMAGES_DIR.rglob('*.png'))):
         submission['id'].append(image_id)
         submission['class'].append(cs)
         mask = (y[0].sigmoid().cpu().numpy() >= .5).astype('uint8')
-        mask = cv2.resize(np.uint8(mask), (image.shape[1], image.shape[0]))
+        mask = cv2.resize(mask, (image.shape[1], image.shape[0]))
         assert mask.shape == image.shape[:2]
         submission['predicted'].append(rle_encode(mask))
 

@@ -31,23 +31,30 @@ class Dataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index: int):
         sample = self.df.loc[index]
-        image = cv2.imread(sample.image_path)[..., ::-1]
+        image = self.load_image(sample.image_path)
 
         masks = []
         for cs in CLASSES:
             if not pd.isna(sample[cs]):
                 decoded_mask = rle_decode(sample[cs], shape=image.shape)[..., 0]
             else:
-                decoded_mask = np.zeros((sample.height, sample.width), dtype='uint8')
+                decoded_mask = np.zeros((sample.height, sample.width), dtype='float32')
 
             masks.append(decoded_mask)
 
-        mask = np.stack(masks, axis=2).astype(np.uint8)
+        mask = np.stack(masks, axis=2).astype('float32')
 
         transformed = self.transforms(image=image, mask=mask)
         image = transformed['image']
-        mask = transformed['mask']  # h x w x n_classes -> n_classes x h x w
+        mask = transformed['mask']
         return image, {name: m.int() for name, m in zip(CLASSES, mask)}
+
+    @staticmethod
+    def load_image(image_path: str):
+        image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED).astype('float32')
+        image = np.tile(image[..., None], [1, 1, 3])
+        image /= image.max()
+        return image
 
 
 class DataModule(pl.LightningDataModule):
@@ -130,13 +137,11 @@ class DataModule(pl.LightningDataModule):
     def get_aug_transforms(input_size, **kwargs):
         return A.Compose(
             [
-                # Augmentation
                 A.Rotate(limit=30, p=1.0),
                 A.RandomResizedCrop(input_size, input_size, (0.8, 1), p=1.0),
                 A.HorizontalFlip(p=0.5),
+                A.VerticalFlip(p=0.5),
                 A.OneOf([A.GaussianBlur(), A.GaussNoise(), A.ImageCompression()], p=1 / 3),
-                # Common
-                A.Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD),
                 ToTensorV2(transpose_mask=True),
             ]
         )
@@ -146,7 +151,6 @@ class DataModule(pl.LightningDataModule):
         return A.Compose(
             [
                 A.Resize(input_size, input_size),
-                A.Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD),
                 ToTensorV2(transpose_mask=True),
             ]
         )

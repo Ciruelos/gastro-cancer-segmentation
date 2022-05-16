@@ -68,7 +68,7 @@ if __name__ == '__main__':
 
     trainer = pl.Trainer(
         gpus=1,
-        precision=16,
+        precision=32,
         benchmark=True,
         callbacks=callbacks,
         accumulate_grad_batches=args.accumulate_grad_batches,
