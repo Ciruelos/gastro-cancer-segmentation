@@ -52,7 +52,6 @@ submission = {'id': [], 'class': [], 'predicted': []}
 model, basic_transforms, _ = load_model(MODEL_DIR)
 model.to(DEVICE)
 
-
 for image_path in tqdm(list(IMAGES_DIR.rglob('*.png'))):
     image_id = f'{image_path.parent.parent.name}_slice_{image_path.name.split("_")[1]}'
 
@@ -69,8 +68,13 @@ for image_path in tqdm(list(IMAGES_DIR.rglob('*.png'))):
         assert mask.shape == image.shape[:2]
         submission['predicted'].append(rle_encode(mask))
 
-submission = pd.DataFrame(submission)
-del SAMPLE_SUBMISSION['predicted']
-submission = SAMPLE_SUBMISSION.merge(submission, on=['id', 'class'])
 
-submission.to_csv(OUTPUT_DIR.joinpath('submission.csv'), index=False)
+if len(submission['id']) != 0:
+    submission = pd.DataFrame(submission)
+    del SAMPLE_SUBMISSION['predicted']
+    submission = SAMPLE_SUBMISSION.merge(submission, on=['id', 'class'])
+    submission.to_csv(OUTPUT_DIR.joinpath('submission.csv'), index=False)
+
+else:
+    submission = pd.DataFrame(submission)
+    submission.to_csv(OUTPUT_DIR.joinpath('submission.csv'), index=False)
