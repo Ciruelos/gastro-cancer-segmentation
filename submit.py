@@ -10,7 +10,7 @@ import albumentations as A
 
 
 IMAGES_DIR = Path('data/train')
-MODEL_DIR = Path('saved_models/submission-6')
+MODEL_DIR = Path('saved_models/submission-8')
 OUTPUT_DIR = Path('trash')
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 SAMPLE_SUBMISSION = pd.read_csv('data/train.csv')
