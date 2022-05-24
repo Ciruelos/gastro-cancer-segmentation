@@ -47,13 +47,20 @@ class Dataset(torch.utils.data.Dataset):
         transformed = self.transforms(image=image, mask=mask)
         image = transformed['image']
         mask = transformed['mask']
-        return image, {name: m.int() for name, m in zip(CLASSES, mask)}
+        return image.float(), {name: m.int() for name, m in zip(CLASSES, mask)}
 
     @staticmethod
-    def load_image(image_path: str):
-        image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED).astype('float32')
+    def load_image(path):
+        # int16 -> float32
+        image = cv2.imread(path, cv2.IMREAD_UNCHANGED).astype('float32')
+
         image = np.tile(image[..., None], [1, 1, 3])
-        image /= image.max()
+
+        # Scale to [0, 255]
+        image = cv2.normalize(
+            image, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F
+        ).astype(np.uint8)
+
         return image
 
 
@@ -141,7 +148,8 @@ class DataModule(pl.LightningDataModule):
                 A.RandomResizedCrop(input_size, input_size, (0.8, 1), p=1.0),
                 A.HorizontalFlip(p=0.5),
                 A.VerticalFlip(p=0.5),
-                A.OneOf([A.GaussianBlur(), A.GaussNoise(), A.ImageCompression()], p=1 / 3),
+                A.OneOf([A.GaussianBlur(), A.GaussNoise()], p=1 / 3),
+                A.Normalize(mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD, always_apply=True),
                 ToTensorV2(transpose_mask=True),
             ]
         )
@@ -151,6 +159,7 @@ class DataModule(pl.LightningDataModule):
         return A.Compose(
             [
                 A.Resize(input_size, input_size),
+                A.Normalize(mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD, always_apply=True),
                 ToTensorV2(transpose_mask=True),
             ]
         )

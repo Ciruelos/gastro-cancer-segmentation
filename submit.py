@@ -10,17 +10,24 @@ import albumentations as A
 
 
 IMAGES_DIR = Path('data/train')
-MODEL_DIR = Path('saved_models/submission-9')
+MODEL_DIR = Path('saved_models/submission-11')
 OUTPUT_DIR = Path('trash')
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 SAMPLE_SUBMISSION = pd.read_csv('data/train.csv')
 SAMPLE_SUBMISSION.rename(columns={'segmentation': 'predicted'}, inplace=True)
 
 
-def load_image(image_path: str):
-    image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED).astype('float32')
+def load_image(path):
+    # int16 -> float32
+    image = cv2.imread(path, cv2.IMREAD_UNCHANGED).astype('float32')
+
     image = np.tile(image[..., None], [1, 1, 3])
-    image /= image.max()
+
+    # Scale to [0, 255]
+    image = cv2.normalize(
+        image, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F
+    ).astype(np.uint8)
+
     return image
 
 
