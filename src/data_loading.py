@@ -134,26 +134,28 @@ class DataModule(pl.LightningDataModule):
         )
 
     @staticmethod
-    def get_aug_transforms(input_size, **kwargs):
-        return A.Compose(
-            [
-                A.Rotate(limit=30, p=1.0),
-                A.RandomResizedCrop(input_size, input_size, (0.8, 1), p=1.0),
-                A.HorizontalFlip(p=0.5),
-                A.VerticalFlip(p=0.5),
-                A.OneOf([A.GaussianBlur(), A.GaussNoise(), A.ImageCompression()], p=1 / 3),
-                ToTensorV2(transpose_mask=True),
-            ]
-        )
+    def get_aug_transforms(input_size, debug=False, **kwargs):
+        transforms = [
+            A.Rotate(limit=30, p=1.0),
+            A.RandomResizedCrop(input_size, input_size, (.7, 1), p=1.0),
+            A.HorizontalFlip(p=0.5),
+            A.VerticalFlip(p=0.5),
+            A.OneOf([A.GaussianBlur(), A.GaussNoise(), A.ImageCompression()], p=1 / 3),
+        ]
+
+        if not debug:
+            transforms += [ToTensorV2(transpose_mask=True)]
+
+        return A.Compose(transforms)
 
     @staticmethod
-    def get_basic_transforms(input_size, **kwargs):
-        return A.Compose(
-            [
-                A.Resize(input_size, input_size),
-                ToTensorV2(transpose_mask=True),
-            ]
-        )
+    def get_basic_transforms(input_size, debug=False, **kwargs):
+        transforms = [A.Resize(input_size, input_size)]
+
+        if not debug:
+            transforms += [ToTensorV2(transpose_mask=True)]
+
+        return A.Compose(transforms)
 
 
 def rle_decode(mask_rle, shape, color=1):
